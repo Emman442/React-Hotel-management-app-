@@ -1,14 +1,11 @@
 import styled from "styled-components";
 import { formatCurrency } from "../../utils/helpers";
-import Spinner from "../../ui/Spinner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteCabin } from "../../services/apiCabins";
-import toast from "react-hot-toast";
 import CreateCabinForm from "./CreateCabinForm";
-import { useState } from "react";
 import { useDeleteCabin } from "./useDeleteCabin";
 import { HiPencil, HiSquare2Stack, HiTrash } from "react-icons/hi2";
 import { useCreateCabin } from "./useCreateCabin";
+import ConfirmDelete from "../../ui/ConfirmDelete"
+import Modal from "../../ui/Modal";
 const TableRow = styled.div`
   display: grid;
   grid-template-columns: 0.6fr 1.8fr 2.2fr 1fr 1fr 1fr;
@@ -49,46 +46,54 @@ const Discount = styled.div`
 `;
 
 export default function CabinRow({ cabin }) {
-  const [showForm, setShowForm] = useState(false);
   const { isPending, mutateAsync } = useDeleteCabin();
   const { id, name, image, maxCapacity, regularPrice, discount } = cabin;
-  const {isCreating, mutate} = useCreateCabin()
+  const { isCreating, mutate } = useCreateCabin();
 
-
-  function handleDuplicate(){
+  function handleDuplicate() {
     mutate({
       name: `Copy Of ${name}`,
       maxCapacity,
       regularPrice,
-      image, 
-      discount
-    })
+      image,
+      discount,
+    });
   }
   return (
-    <>
-      <TableRow role="row">
-        <Img src={image} />
-        <Cabin>{name}</Cabin>
-        <div>Fits Up to {maxCapacity}</div>
-        <Price>{formatCurrency(regularPrice)}</Price>
-        <Discount>{formatCurrency(discount)}</Discount>
-        <div>
-          <button onClick={()=>handleDuplicate()}>
-            <HiSquare2Stack />
-          </button>
-          <button
-            disabled={isPending}
-            onClick={() => setShowForm((show) => !show)}
-          >
-            <HiPencil />
-          </button>
-          <button disabled={isPending} onClick={() => mutateAsync(id)}>
-            <HiTrash />
-          </button>
-        </div>
-      </TableRow>
+    <TableRow role="row">
+      <Img src={image} />
+      <Cabin>{name}</Cabin>
+      <div>Fits Up to {maxCapacity}</div>
+      <Price>{formatCurrency(regularPrice)}</Price>
+      <Discount>{formatCurrency(discount)}</Discount>
+      <div>
+        <button onClick={() => handleDuplicate()}>
+          <HiSquare2Stack />
+        </button>
 
-      {showForm && <CreateCabinForm cabinToEdit={cabin} />}
-    </>
+        <Modal>
+          <Modal.Open opens="edit">
+            <button
+              disabled={isPending}
+              onClick={() => setShowForm((show) => !show)}
+            >
+              <HiPencil />
+            </button>
+          </Modal.Open>
+          <Modal.Window name="edit">
+            <CreateCabinForm cabinToEdit={cabin} />
+          </Modal.Window>
+          <Modal.Open opens="delete">
+            <button>
+             
+              <HiTrash />
+            </button>
+          </Modal.Open>
+          <Modal.Window name="delete">
+            <ConfirmDelete resourceName="cabins" disabled={isPending} onConfirm={()=>mutateAsync(id)}/>
+          </Modal.Window>
+        </Modal>
+      </div>
+    </TableRow>
   );
 }
